@@ -31,7 +31,26 @@
   page-상대 stored vpos(max_vpos_px)가 `current_height + one_line` 을 크게 초과하면(누적 vpos/쪽분할
   직후 신호) `current_height` 사용. (process_multicolumn_break ~13931)
 
-## 3. ★난제 ④ — 재추진 핵심 (한 페이지 다중 zone offset 누적)
+## 3. ★★난제 ⑤ (최심층, 진짜 벽) — Paper-앵커 개체 extent vs 압축 vpos flow
+
+**추가 계측(2차 재추진)으로 ④보다 깊은 근본원인 확정.** ②③-a+④(zone-offset 누적 + pad 제외 +
+마진 최소)를 구현해 zone 전환 허위 분할은 **전부 제거**(81→22p, zone break 0)했으나, **자연 오버플로
+타이밍이 한글과 어긋난다**(p7 pi95~137 과밀 = pi117 오버플로 놓침; pi212/258/271/320/377 과다 분할).
+
+원인: **stored vpos flow 가 실제 렌더 높이보다 압축**되어 있다. 예) 한글 p7 = pi95~116(vpos delta
+pi95→117 = 28985HU ≈ 386px)가 **한 페이지(1027px)를 꽉 채운다** → vpos 386px 가 렌더 1027px 에
+해당(≈2.6×). Paper(용지)-앵커 절대 개체는 vpos flow 를 진행시키지 않고 **절대 위치에 full 높이로
+렌더**되기 때문이다(반면 pi86 글상자처럼 vpos 를 개체높이만큼 진행시키는 개체도 섞여 있음 = 이질적).
+
+**결론**: 올바른 페이지네이션은 **Paper-앵커 개체의 실제 렌더 extent(절대 Y 상·하한) 기준**으로
+페이지를 나눠야 한다. 압축된 vpos flow 로 높이를 세는 현재 typeset 경로로는 불가능. 이는 **절대위치
+개체 extent 기반 페이지네이션**이라는 신규 레이아웃 기능(#2004 이상 규모)이다. 흑박스 계측의 한계.
+
+**재추진 시 우선 조사**: (a) 각 개체가 vpos 를 진행시키는지(Para-앵커) vs 진행 안 시키는지(Paper-앵커
+절대) 판별 규칙, (b) 페이지네이션에서 Paper-앵커 개체의 절대 Y extent 를 페이지 분할 기준에 반영,
+(c) Para-앵커/인라인 개체는 기존 vpos flow 유지. 한글 렌더(개체별 실제 Y)를 오라클로 대조 필요.
+
+## 4. 난제 ④ — zone offset 누적 (해결됨, 참고)
 
 한 페이지에 여러 ColumnDef zone이 stack될 때(p7 = pi95~137, ~6 zone) **zone-offset 누적이
 `current_height` 리셋(typeset.rs:14082 `current_height = 0.0`)으로 끊긴다**. 그 결과 각 zone이
@@ -47,7 +66,7 @@ pi117~270 off-by-1.
   안 맞아 조기 컬럼/페이지 분할되는 것도 동일 zone 처리에서 함께 정합 필요(avail = body − zone_off,
   zone_off 팽창이 원인이었음).
 
-## 4. 단계 (예정 5단계)
+## 5. 단계 (예정 5단계)
 
 1. **Stage A — 오라클 하네스 정비**: 74312 pi-page 오라클 + 다단 회귀 샘플(shortcut/hwpspec/exam)
    pi-page 기준선 캡처. before/after 정렬 대조 스크립트.
@@ -58,7 +77,7 @@ pi117~270 off-by-1.
    테스트 전건**(exam_eng/1082/1156/1375/1488) + svg_snapshot/opengov 시각 스냅샷 그린.
 5. **Stage E — 회귀테스트 + 최종보고**: `tests/issue_2019_*.rs`(페이지수 + pi-page 정렬 assert).
 
-## 5. 승인 요청
+## 6. 승인 요청
 
 위 재추진 계획(확정 모델 기준, ④ 집중)으로 진행 승인 요청합니다. 승인 시 Stage A(오라클 하네스)부터
 착수하며, **각 단계마다 pi-page 오라클로 정렬을 검증**하고 보고합니다. 난제 ④는 다단 hot-path
