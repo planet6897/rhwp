@@ -13901,7 +13901,15 @@ impl TypesetEngine {
                 // 가정으로, 같은 쪽 두 번째 틀에서 기존 배타분만큼 과관용해져 한글이
                 // 다음 쪽으로 넘기는 틀을 현재 쪽에 흡수했다(36373162 pi16, 2쪽→1쪽).
                 let avail_after = available - prospective_excl;
-                if sync_h <= avail_after {
+                // [#2098 재보정, r12] 앵커 vpos≤0(절대배치 산물)의 저장-흐름-끝 복원
+                // fit 은 경계 케이스에서 과관용 — 10k r12 재검에서 결재문서 60건이
+                // 흡수돼 한글(분할)과 어긋났다. 10k 슬랙 실측: 분할 정답군 3.4~52.1px,
+                // 흡수 정답군 {37.1, 39.6, 67.7, 72.9}px 로 **중첩** — 슬랙 스칼라로는
+                // 완전 분리 불가(진짜 판별 신호는 후속 조사). 53px 마진은 분할군
+                // 전건(≤52.1)을 한글처럼 분할하고 고슬랙 흡수(67.7/72.9)를 유지하는
+                // 순최적점. 저슬랙 흡수 2건(37.1/39.6)은 기지 한계(r11 동일).
+                let uncertain_anchor_margin = if anchor_vpos <= 0 { 53.0 } else { 0.0 };
+                if sync_h + uncertain_anchor_margin <= avail_after {
                     // 현재 쪽 하단에 배치 — 본문 흐름은 vpos 동기 위치까지만 전진.
                     st.current_height = sync_h;
                 } else if !st.current_items.is_empty() {
