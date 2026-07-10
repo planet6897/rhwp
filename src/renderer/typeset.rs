@@ -13908,7 +13908,14 @@ impl TypesetEngine {
                 // 완전 분리 불가(진짜 판별 신호는 후속 조사). 53px 마진은 분할군
                 // 전건(≤52.1)을 한글처럼 분할하고 고슬랙 흡수(67.7/72.9)를 유지하는
                 // 순최적점. 저슬랙 흡수 2건(37.1/39.6)은 기지 한계(r11 동일).
-                let uncertain_anchor_margin = if anchor_vpos <= 0 { 53.0 } else { 0.0 };
+                // [#2138 재보정] warm PDF 권위 재확정: 분할 정답군 슬랙 3.4~61.3px
+                // (36394733 61.3 포함 — 53px 마진이 이를 흡수해 신규 회귀), 흡수
+                // 정답군 {37.1, 39.6, 67.7, 72.9}. 최적 스칼라 구간 [61.3, 67.7) 의
+                // 62px 채택 — 잔여 오류는 저슬랙 흡수 2건(36358528/36477251, r11 동일
+                // 기지 한계). 부수 발견: 한글 자체가 fresh-open/warm-open 에 따라
+                // 같은 문서를 1쪽/2쪽으로 다르게 레이아웃(PDF 포함) — 권위 판정은
+                // warm PDF 로 통일(#2138 stage1).
+                let uncertain_anchor_margin = if anchor_vpos <= 0 { 62.0 } else { 0.0 };
                 if sync_h + uncertain_anchor_margin <= avail_after {
                     // 현재 쪽 하단에 배치 — 본문 흐름은 vpos 동기 위치까지만 전진.
                     st.current_height = sync_h;
