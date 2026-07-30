@@ -3674,8 +3674,13 @@ impl LayoutEngine {
             // 장식 공백이 든 `- 1 -`(5자)을 30pt 로 과대평가해(실측 24.8pt) 가운데·
             // 오른쪽 정렬 위치를 약 2pt 왼쪽으로 밀었다. 아래 TextRunNode 가 쓰는
             // 스타일과 **같은 값**으로 재야 측정과 렌더가 어긋나지 않는다.
+            // [#3048] 글꼴은 한컴 실측을 따른다. 한컴 PDF 오라클에서 쪽 번호 글꼴이
+            // 식별된 5건 중 4건이 **함초롬돋움** 이고, 문서 글꼴 표에 그 글꼴이
+            // 선언돼 있는지와 무관하다(76076_regulatory_analysis 는 미선언인데도
+            // 함초롬돋움). 종전 값 "바탕" 은 5건 어디와도 맞지 않았다.
+            // 예외 1건(KTX.hwp -> 굴림)은 원인 미규명 — 이슈 #3048 에 기록.
             let page_num_style = TextStyle {
-                font_family: "바탕".to_string(),
+                font_family: "함초롬돋움".to_string(),
                 font_size,
                 color: 0x000000,
                 ..Default::default()
