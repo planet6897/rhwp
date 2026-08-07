@@ -124,7 +124,10 @@ async function loadImpl(impl, wasm) {
   const mod = await import(pathToFileURL(resolve(REPO, impl)).href);
   return {
     name: impl,
-    make: (doc) => mod.createHwpCtrl({ wasmModule: doc }),
+    // 신규 패키지는 **자기 손으로** 문서를 연다(규격의 `Open`). 하니스가 문서를 만들어
+    // 넘겨 주면 그 API 가 대조에서 빠져 "구현했다"고 착각하게 된다.
+    ownsOpen: true,
+    make: ({ wasm, onSave }) => mod.createHwpCtrl({ wasm, onSave }),
   };
 }
 
@@ -163,15 +166,29 @@ async function main() {
   };
 
   try {
-    let doc;
-    if (scenario.open) {
-      const bytes = readFileSync(join(REPO, scenario.open));
-      doc = new wasm.HwpDocument(bytes);
-      result.calls.push({ call: 'Open', args: [scenario.open], value: true });
+    let ctrl;
+    // 저장은 호스트가 받는다 — 규격상 브라우저에서는 다운로드다(v2.4 §2.2).
+    let savedBytes = null;
+    const onSave = (bytes) => {
+      savedBytes = bytes;
+    };
+
+    if (impl.ownsOpen) {
+      ctrl = impl.make({ wasm, onSave });
+      if (scenario.open) {
+        const bytes = readFileSync(join(REPO, scenario.open));
+        const opened = ctrl.Open(new Uint8Array(bytes), '', '');
+        result.calls.push({ call: 'Open', args: [scenario.open], value: normalize(opened) });
+      }
     } else {
-      doc = wasm.HwpDocument.createEmpty();
+      const doc = scenario.open
+        ? new wasm.HwpDocument(readFileSync(join(REPO, scenario.open)))
+        : wasm.HwpDocument.createEmpty();
+      ctrl = impl.make(doc);
+      if (scenario.open) {
+        result.calls.push({ call: 'Open', args: [scenario.open], value: true });
+      }
     }
-    const ctrl = impl.make(doc);
 
     for (const [name, callArgs = []] of scenario.calls ?? []) {
       const record = { call: name, args: callArgs };
@@ -184,10 +201,22 @@ async function main() {
     }
 
     if (scenario.saveAs) {
-      const bytes = ctrl.getWasmDoc ? ctrl.getWasmDoc().exportHwp() : doc.exportHwp();
-      const dst = join(outDir, scenario.saveAs);
-      writeFileSync(dst, bytes);
-      result.saved = { path: dst, ok: true };
+      // 규격의 `SaveAs` 를 실제로 태운다. 하니스가 문서를 직접 내보내면 그 API 가
+      // 대조에서 빠진다. 옛 경로(문서를 넘겨받는 impl)만 직접 내보내기로 남긴다.
+      let bytes = null;
+      if (impl.ownsOpen) {
+        ctrl.SaveAs(scenario.saveAs, '', '');
+        bytes = savedBytes;
+      } else {
+        bytes = ctrl.getWasmDoc().exportHwp();
+      }
+      if (bytes) {
+        const dst = join(outDir, scenario.saveAs);
+        writeFileSync(dst, bytes);
+        result.saved = { path: dst, ok: true };
+      } else {
+        result.saved = { path: null, ok: false };
+      }
     }
   } catch (e) {
     result.fatal = `${e.constructor.name}: ${e.message}`;
