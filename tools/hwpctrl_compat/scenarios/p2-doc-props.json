@@ -1,17 +1,16 @@
 {
-  "id": "doc-basic",
-  "title": "문서 정보 속성과 커서 이동 — 읽기 전용",
+  "id": "p2-doc-props",
+  "title": "P2 문서 속성과 커서 이동",
   "ledger": [
-    "HwpCtrl.property.PageCount",
-    "HwpCtrl.method.SetPos",
-    "HwpCtrl.method.GetPos"
+    "HwpCtrl.property.IsEmpty",
+    "HwpCtrl.property.IsModified",
+    "HwpCtrl.property.Version",
+    "HwpCtrl.property.EditMode",
+    "HwpCtrl.property.SelectionMode",
+    "HwpCtrl.method.MovePos"
   ],
   "open": "samples/issue-986-receipt.hwp",
   "calls": [
-    [
-      "PageCount",
-      []
-    ],
     [
       "IsEmpty",
       []
@@ -33,22 +32,6 @@
       []
     ],
     [
-      "GetPos",
-      []
-    ],
-    [
-      "MovePos",
-      [
-        3,
-        0,
-        0
-      ]
-    ],
-    [
-      "GetPos",
-      []
-    ],
-    [
       "MovePos",
       [
         2,
@@ -61,10 +44,10 @@
       []
     ],
     [
-      "SetPos",
+      "MovePos",
       [
+        3,
         0,
-        1,
         0
       ]
     ],

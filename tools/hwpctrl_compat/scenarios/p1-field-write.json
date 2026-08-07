@@ -2,8 +2,6 @@
   "id": "p1-field-write",
   "title": "P1 필드 쓰기 계약 — 다중 필드(0x02)·덮어쓰기·이름 변경·생성",
   "ledger": [
-    "HwpCtrl.method.PutFieldText",
-    "HwpCtrl.method.GetFieldText",
     "HwpCtrl.method.RenameField",
     "HwpCtrl.method.CreateField",
     "HwpCtrl.method.SetCurFieldName"

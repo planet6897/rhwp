@@ -4,10 +4,11 @@
   "oracleVersion": "한글2022 (설치본 COM)",
   "summary": {
     "total": 484,
-    "done": 0,
+    "done": 7,
     "byStatus": {
-      "unimplemented": 480,
-      "implemented": 4
+      "unimplemented": 473,
+      "implemented": 4,
+      "verified": 7
     },
     "byUnit": {
       "property": {
@@ -15,7 +16,8 @@
         "implemented": 1
       },
       "method": {
-        "unimplemented": 85,
+        "unimplemented": 78,
+        "verified": 7,
         "implemented": 3
       },
       "event": {
@@ -672,7 +674,7 @@
       "specArityAmbiguous": false,
       "oracle": {
         "scenarios": [
-          "doc-basic"
+          "p2-doc-props"
         ],
         "lastRun": null,
         "diff": 1
@@ -725,7 +727,7 @@
       "specArityAmbiguous": false,
       "oracle": {
         "scenarios": [
-          "doc-basic"
+          "p2-doc-props"
         ],
         "lastRun": null,
         "diff": 1
@@ -744,8 +746,7 @@
       "specArityAmbiguous": false,
       "oracle": {
         "scenarios": [
-          "doc-basic",
-          "field-put-save"
+          "p2-doc-props"
         ],
         "lastRun": null,
         "diff": 1
@@ -834,7 +835,7 @@
       "specArityAmbiguous": false,
       "oracle": {
         "scenarios": [
-          "doc-basic"
+          "p2-doc-props"
         ],
         "lastRun": null,
         "diff": 1
@@ -853,7 +854,7 @@
       "specArityAmbiguous": false,
       "oracle": {
         "scenarios": [
-          "doc-basic"
+          "p2-doc-props"
         ],
         "lastRun": null,
         "diff": 1
@@ -973,9 +974,11 @@
       "legacyHwpctl": false,
       "specArityAmbiguous": false,
       "oracle": {
-        "scenarios": [],
+        "scenarios": [
+          "p1-field-write"
+        ],
         "lastRun": null,
-        "diff": null
+        "diff": 1
       }
     },
     {
@@ -1036,16 +1039,16 @@
       "name": "FieldExist",
       "arity": 1,
       "section": "8.3.7",
-      "status": "unimplemented",
+      "status": "verified",
       "notes": "",
       "legacyHwpctl": false,
       "specArityAmbiguous": false,
       "oracle": {
         "scenarios": [
-          "field-read"
+          "p1-field-exist"
         ],
         "lastRun": null,
-        "diff": 1
+        "diff": 0
       }
     },
     {
@@ -1061,7 +1064,8 @@
       "specArityAmbiguous": false,
       "oracle": {
         "scenarios": [
-          "field-read"
+          "field-read",
+          "p1-field-query"
         ],
         "lastRun": null,
         "diff": 1
@@ -1080,7 +1084,8 @@
       "specArityAmbiguous": false,
       "oracle": {
         "scenarios": [
-          "field-read"
+          "field-read",
+          "p1-field-query"
         ],
         "lastRun": null,
         "diff": 1
@@ -1093,17 +1098,17 @@
       "name": "GetFieldText",
       "arity": 1,
       "section": "8.3.10",
-      "status": "unimplemented",
+      "status": "verified",
       "notes": "",
       "legacyHwpctl": true,
       "specArityAmbiguous": false,
       "oracle": {
         "scenarios": [
           "field-put-save",
-          "field-read"
+          "p1-field-put-multi"
         ],
         "lastRun": null,
-        "diff": 1
+        "diff": 0
       }
     },
     {
@@ -1421,14 +1426,16 @@
       "name": "ModifyFieldProperties",
       "arity": 3,
       "section": "8.3.29",
-      "status": "unimplemented",
+      "status": "verified",
       "notes": "",
       "legacyHwpctl": false,
       "specArityAmbiguous": false,
       "oracle": {
-        "scenarios": [],
+        "scenarios": [
+          "p1-field-view"
+        ],
         "lastRun": null,
-        "diff": null
+        "diff": 0
       }
     },
     {
@@ -1444,7 +1451,7 @@
       "specArityAmbiguous": false,
       "oracle": {
         "scenarios": [
-          "doc-basic"
+          "p2-doc-props"
         ],
         "lastRun": null,
         "diff": 1
@@ -1493,14 +1500,16 @@
       "name": "Open",
       "arity": 5,
       "section": "8.3.33",
-      "status": "unimplemented",
+      "status": "verified",
       "notes": "",
       "legacyHwpctl": true,
       "specArityAmbiguous": false,
       "oracle": {
-        "scenarios": [],
+        "scenarios": [
+          "p1-field-put-multi"
+        ],
         "lastRun": null,
-        "diff": null
+        "diff": 0
       }
     },
     {
@@ -1510,16 +1519,17 @@
       "name": "PutFieldText",
       "arity": 2,
       "section": "8.3.34",
-      "status": "unimplemented",
+      "status": "verified",
       "notes": "",
       "legacyHwpctl": true,
       "specArityAmbiguous": false,
       "oracle": {
         "scenarios": [
-          "field-put-save"
+          "field-put-save",
+          "p1-field-put-multi"
         ],
         "lastRun": null,
-        "diff": 1
+        "diff": 0
       }
     },
     {
@@ -1551,9 +1561,11 @@
       "legacyHwpctl": true,
       "specArityAmbiguous": false,
       "oracle": {
-        "scenarios": [],
+        "scenarios": [
+          "p1-field-write"
+        ],
         "lastRun": null,
-        "diff": null
+        "diff": 1
       }
     },
     {
@@ -1597,16 +1609,17 @@
       "name": "SaveAs",
       "arity": 5,
       "section": "8.3.39",
-      "status": "unimplemented",
+      "status": "verified",
       "notes": "",
       "legacyHwpctl": true,
       "specArityAmbiguous": false,
       "oracle": {
         "scenarios": [
-          "field-put-save"
+          "field-put-save",
+          "p1-field-put-multi"
         ],
         "lastRun": null,
-        "diff": 1
+        "diff": 0
       }
     },
     {
@@ -1638,9 +1651,11 @@
       "legacyHwpctl": true,
       "specArityAmbiguous": false,
       "oracle": {
-        "scenarios": [],
+        "scenarios": [
+          "p1-field-write"
+        ],
         "lastRun": null,
-        "diff": null
+        "diff": 1
       }
     },
     {
@@ -1650,14 +1665,16 @@
       "name": "SetFieldViewOption",
       "arity": 1,
       "section": "8.3.42",
-      "status": "unimplemented",
+      "status": "verified",
       "notes": "",
       "legacyHwpctl": false,
       "specArityAmbiguous": false,
       "oracle": {
-        "scenarios": [],
+        "scenarios": [
+          "p1-field-view"
+        ],
         "lastRun": null,
-        "diff": null
+        "diff": 0
       }
     },
     {
