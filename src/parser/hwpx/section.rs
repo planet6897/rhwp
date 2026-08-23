@@ -575,6 +575,13 @@ fn parse_paragraph_body(
                                                               // 일반 동일-ID run 경계는 위치 자체가 IR이 보존할 정보이므로 제거하면 안 된다 (#3739).
     let mut preceding_run_had_sec_pr = false;
     let mut preceding_run_char_shape_id: Option<u32> = None;
+    // [#5961] HWP5 문단 축에서만 자리를 차지하는 앞머리 슬롯 수.
+    //
+    // 아래 `secPr` arm 이 `\u{0002}` 를 밀어 넣는 슬롯들 — 구역 정의와 그 안에 실려 온
+    // 첫 단 정의 — 은 HWPX 문단에는 대응 요소가 없다(`hp:secPr` 은 구역 머리 run 소속,
+    // 첫 `hp:colPr` 은 템플릿이 흡수). 그래서 저장 `textpos` 는 그만큼 짧은 축에 있다.
+    // 그 슬롯을 만들어 넣은 주체가 파서 자신이므로 개수는 추측이 아니라 사실이다.
+    let mut hwp5_only_leading_slots: u32 = 0;
     // [Task #1556] fieldEnd 의 (beginIDRef, fieldid) 를 출현 순서대로 보관 — text_parts 의
     // `\u{0004}` 와 1:1 대응. 고아 fieldEnd 복원에 사용.
     let mut field_end_attrs: Vec<(u32, u32)> = Vec::new();
@@ -660,16 +667,23 @@ fn parse_paragraph_body(
                         parse_section_def_start(ce, &mut sd);
                         let col_def_opt = parse_sec_pr_children(reader, &mut sd)?;
                         sec_def = Some(sd.clone());
-                        // [Task #901] SectionDef 도 HWP 바이너리에서 8 utf16 inline marker —
-                        // line_seg.text_start (file 값) 가 HWP 인코딩 가정. HWPX parser
-                        // 가 utf16_pos 동기화하지 않으면 paragraph 0 의 compose_lines 가
-                        // 모든 chars 를 line 0 에 packing. \u{0002} 추가로 8 utf16 정합.
+                        // [Task #901] SectionDef 도 HWP 바이너리에서 8 utf16 inline marker.
+                        // HWPX parser 가 utf16_pos 동기화하지 않으면 paragraph 0 의
+                        // compose_lines 가 모든 chars 를 line 0 에 packing. \u{0002} 추가로
+                        // 8 utf16 정합.
+                        //
+                        // [#5961] 이 슬롯은 **HWP5 축에만 있다**. 종전 주석은 저장
+                        // `line_seg.text_start` 도 같은 축이라고 적었으나 사실이 아니다 —
+                        // 그 값은 `hp:secPr` 이 자리를 차지하지 않는 HWPX 축이다. 두 축의
+                        // 정합은 문단 끝에서 `hwp5_only_leading_slots` 로 맞춘다.
                         para.controls.push(Control::SectionDef(Box::new(sd)));
                         text_parts.push("\u{0002}".to_string());
+                        hwp5_only_leading_slots += 1;
                         // colPr이 있으면 ColumnDef 컨트롤 추가 (초기 단 정의) + 8 utf16.
                         if let Some(cd) = col_def_opt {
                             para.controls.push(Control::ColumnDef(cd));
                             text_parts.push("\u{0002}".to_string());
+                            hwp5_only_leading_slots += 1;
                         }
                     }
                     b"linesegarray" => {
@@ -908,6 +922,29 @@ fn parse_paragraph_body(
     para.text = visual_text;
     para.char_offsets = char_offsets;
     para.char_count = utf16_pos + 1; // +1 for 끝 마커
+
+    // [#5961] 저장 lineseg 의 `textpos` 를 HWP5 문단 축으로 올린다.
+    //
+    // 위에서 만든 `char_offsets`·`char_count`·`char_shapes` 는 확장 제어마다 8유닛을 주는
+    // **HWP5 축**이다. 그런데 `textpos` 는 파일이 준 값 그대로라 **HWPX 축** — 앞머리
+    // `hp:secPr`·흡수된 첫 `hp:colPr` 만큼 짧다. 정규화하지 않으면 같은 문단의 IR 이 두
+    // 축을 섞어 들고 있게 되고, 그 값을 `char_offsets` 로 투영하는 소비자들이 조용히
+    // 어긋난다(`composer::compose_lines`, `layout::control_line_seg_index` 등).
+    //
+    // HWP3 파서가 같은 일을 이미 한다 — `account_hwp3_section_leading_control_units`.
+    // 다만 그쪽은 컨트롤을 새로 끼워 넣으므로 좌표 4종을 모두 옮기고, 여기서는 나머지
+    // 3종이 이미 HWP5 축이라 `line_segs` 만 올린다.
+    //
+    // 문단 시작(0)은 두 축에서 같은 자리이므로 건드리지 않는다. 앞머리 슬롯이라
+    // 0 보다 큰 `textpos` 는 예외 없이 그 슬롯들 뒤에 있다.
+    if hwp5_only_leading_slots > 0 {
+        let shift = 8 * hwp5_only_leading_slots;
+        for line_seg in &mut para.line_segs {
+            if line_seg.text_start > 0 {
+                line_seg.text_start += shift;
+            }
+        }
+    }
     para.has_para_text =
         !para.text.is_empty() || !para.controls.is_empty() || !para.title_marks.is_empty();
 

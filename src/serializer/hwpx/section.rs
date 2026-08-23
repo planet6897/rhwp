@@ -779,15 +779,12 @@ pub(crate) fn render_paragraph_parts(
     // 실패, **32 로 내리면 완전 복원** — 축이 16 짧다는 직접 증거다). 2022 는 관대했다.
     // `char_count` 도 HWP5 축이므로 상한에서 같은 폭을 뺀다.
     //
-    // 단 **HWPX 출처는 손대지 않는다**. `LineSeg::text_start` 는 파서가 파일 값을 그대로
-    // 담으므로 출처마다 축이 다르다 — HWPX 원본의 `textpos` 는 이미 HWPX 축이라 한 번 더
-    // 빼면 왕복이 깨진다(aift.hwpx 문단 0: `textpos 24 → 8`).
-    let hwp5_only_units = if ctx.line_segs_on_hwpx_axis {
-        hwp5_only_slot_positions.clear();
-        0
-    } else {
-        8 * hwp5_only_slot_positions.len() as u32
-    };
+    // [#5961] 출처를 묻지 않는다. 종전에는 HWPX 출처만 예외로 건너뛰었다 — 파서가 파일
+    // 값을 그대로 담아 출처마다 축이 달랐기 때문이다. 이제 HWPX 파서가 읽을 때 HWP5 축으로
+    // 올리므로(`parser/hwpx/section.rs` 의 `hwp5_only_leading_slots`) IR 은 언제나 HWP5
+    // 축이고, 내보낼 때는 언제나 내리면 된다. 축을 되돌리는 쪽과 올리는 쪽이 같은 규칙
+    // (앞머리 비방출 슬롯 × 8)을 쓰므로 왕복이 고정점이다.
+    let hwp5_only_units = 8 * hwp5_only_slot_positions.len() as u32;
     let rebased_line_segs: Option<Vec<LineSeg>> =
         (!hwp5_only_slot_positions.is_empty() && !para.line_segs.is_empty()).then(|| {
             para.line_segs

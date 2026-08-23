@@ -16,10 +16,14 @@
 //! 두 자리 16유닛만큼 짧다. 한글 2022 는 같은 파일을 관대하게 열었다.
 //!
 //! 계약: 방출 XML 을 한 글자도 내지 않은 슬롯은 HWPX 축을 차지하지 않으므로, 그 뒤의
-//! `textpos` 는 슬롯당 8 씩 내려서 낸다. **단 HWPX 출처는 예외다** — `LineSeg::text_start`
-//! 는 파서가 파일 값을 그대로 담으므로 출처마다 축이 다르고, HWPX 원본의 `textpos` 는
-//! 이미 HWPX 축이다. 한 번 더 빼면 왕복이 깨진다(`aift.hwpx` 문단 0: `textpos 24 → 8`,
-//! `task1391_aift_memo_roundtrips` 가 잡는다).
+//! `textpos` 는 슬롯당 8 씩 내려서 낸다.
+//!
+//! [#5961] 종전에는 여기에 **HWPX 출처 예외**가 붙어 있었다 — 파서가 파일 값을 그대로
+//! 담아 출처마다 축이 달랐기 때문이다. 이제 HWPX 파서가 읽을 때 HWP5 축으로 올리므로
+//! (`parser/hwpx/section.rs` 의 `hwp5_only_leading_slots`) IR 의 축은 하나이고, 내보낼
+//! 때는 출처를 묻지 않고 언제나 내린다. 올리는 쪽과 내리는 쪽이 같은 규칙(앞머리
+//! 비방출 슬롯 × 8)을 쓰므로 왕복이 고정점이다 — `aift.hwpx` 문단 0 은 파서가 24 → 40
+//! 으로 올리고 직렬화기가 40 → 24 로 되돌린다(`task1391_aift_memo_roundtrips`).
 
 use std::io::Read;
 
@@ -207,18 +211,26 @@ fn a_plain_paragraph_axis_is_untouched() {
     );
 }
 
-/// HWPX 출처의 `textpos` 는 이미 HWPX 축이므로 건드리지 않는다.
+/// [#5961] 재기준화는 **출처를 묻지 않는다**.
 ///
-/// 같은 IR 을 출처만 HWPX 로 바꿔 낸다 — 재기준화가 무조건 걸리면 48 이 32 로 내려가
-/// HWPX 왕복이 고정점을 잃는다.
+/// #5943 때는 HWPX 출처의 `textpos` 가 이미 HWPX 축이라 예외로 건너뛰어야 했다. 이제
+/// HWPX 파서가 읽을 때 HWP5 축으로 올리므로 IR 은 출처와 무관하게 언제나 HWP5 축이고,
+/// 내보낼 때는 언제나 내린다. 같은 IR 을 출처만 바꿔 내도 결과가 같아야 한다 — 축이
+/// 출처에 따라 갈리면 #5961 이 없애려던 조건 분기가 되살아난 것이다.
 #[test]
-fn an_hwpx_source_keeps_its_own_axis() {
+fn the_rebase_does_not_depend_on_the_source_format() {
+    let hwp5_positions = textpos_values(&section_xml(&section_first_paragraph_document()));
+
     let mut doc = section_first_paragraph_document();
     doc.provenance.format = rhwp::model::provenance::SourceFormat::Hwpx;
+    let hwpx_positions = textpos_values(&section_xml(&doc));
 
-    let positions = textpos_values(&section_xml(&doc));
+    assert_eq!(
+        hwp5_positions, hwpx_positions,
+        "출처만 바꿨는데 textpos 가 갈렸다 — 축이 IR 안에서 통일되지 않았다(#5961)."
+    );
     assert!(
-        positions.contains(&48),
-        "HWPX 출처의 textpos 를 또 내렸다 — 이미 HWPX 축인 값이라 왕복이 깨진다.          실측 textpos={positions:?}"
+        hwpx_positions.contains(&32),
+        "HWP5 축 48 이 HWPX 축 32 로 내려가지 않았다. 실측 textpos={hwpx_positions:?}"
     );
 }
