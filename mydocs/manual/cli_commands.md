@@ -1193,10 +1193,20 @@ rhwp edit insert-text-in-cell 양식.hwpx --table 0 --row 1 --col 2 --cell-para 
 구역 정의(머리말 감추기·시작 번호 등)를 바꾼다. 코어 `set_section_def_native`. `--props` 필수.
 
 ### `edit insert-page-break <파일> [--section N] [--para N] [--offset N] [-o <출력>] [--dry-run] [--verify] [--json]` (#4993)
-문단을 지정 오프셋에서 가르고 쪽 나눔을 넣는다. 코어 `insert_page_break_native` 배선.
+문단에 쪽 나눔을 넣는다. 코어 `insert_page_break_native` 배선.
+
+`--offset 0`(문단 시작)은 문단을 **가르지 않고** 그 문단이 쪽 나눔을 갖는다 — HWPX
+`hp:p/@pageBreak` 와 HWP5 문단 헤더 비트는 break-before 속성이다(#7218). 중간 오프셋은
+그 자리에서 가르고 뒤 조각이 쪽 나눔을 갖는다. 봉투가 문단 좌표 변화를 알린다.
+
+| 봉투 키 | 계약 |
+| --- | --- |
+| `paragraphDelta` | 문단 수 증가분. 문단 시작은 `0`, 중간 오프셋은 `1`. |
+| `pageBreakParagraph` | 쪽 나눔이 걸린 문단 색인. 문단 시작은 `--para` 그대로, 중간 오프셋은 `--para + 1`. |
 
 ### `edit insert-column-break <파일> [--section N] [--para N] [--offset N] [-o <출력>] [--dry-run] [--verify] [--json]` (#5019)
-문단을 지정 오프셋에서 가르고 단 나눔을 넣는다. 코어 `insert_column_break_native` 배선.
+문단에 단 나눔을 넣는다. 코어 `insert_column_break_native` 배선.
+`--offset 0` 은 쪽 나눔과 같은 계약이다 — 문단을 가르지 않고 그 문단이 단 나눔을 갖는다.
 
 <a id="edit-insert-table"></a>
 

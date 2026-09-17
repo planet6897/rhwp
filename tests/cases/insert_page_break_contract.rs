@@ -64,6 +64,45 @@ fn insert_page_break_splits_paragraph() {
     let output = run(&args);
     assert_eq!(output.status.code(), Some(0), "{:?}", output);
     assert!(para_count(&out) > before);
+    // [#7218] 봉투가 문단 좌표 변화를 알린다 — 중간 오프셋은 문단이 하나 늘고 쪽 나눔은
+    // 뒤 조각에 붙는다.
+    let envelope: serde_json::Value = serde_json::from_slice(&output.stdout).expect("봉투 JSON");
+    assert_eq!(envelope["paragraphDelta"], 1, "{envelope}");
+    assert_eq!(envelope["pageBreakParagraph"], 4, "{envelope}");
+    let _ = std::fs::remove_file(&out);
+}
+
+/// 문단 시작은 문단을 가르지 않고, 봉투가 그 사실을 알린다.
+///
+/// [#7218] 코어 계약은 `issue_7218_page_break_at_paragraph_start.rs` 가 잠근다. 이
+/// 시험은 **CLI 봉투**가 후속 좌표 편집에 필요한 값을 싣는지만 본다.
+#[test]
+fn insert_page_break_at_paragraph_start_reports_no_paragraph_shift() {
+    let src = sample();
+    let before = para_count(Path::new(&src));
+    let out = temp("start");
+    let args = [
+        "edit",
+        "insert-page-break",
+        src.as_str(),
+        "--para",
+        "3",
+        "--offset",
+        "0",
+        "-o",
+        out.to_str().unwrap(),
+        "--json",
+    ];
+    let output = run(&args);
+    assert_eq!(output.status.code(), Some(0), "{:?}", output);
+    assert_eq!(
+        para_count(&out),
+        before,
+        "문단 시작의 쪽 나눔은 문단 수를 바꾸지 않는다",
+    );
+    let envelope: serde_json::Value = serde_json::from_slice(&output.stdout).expect("봉투 JSON");
+    assert_eq!(envelope["paragraphDelta"], 0, "{envelope}");
+    assert_eq!(envelope["pageBreakParagraph"], 3, "{envelope}");
     let _ = std::fs::remove_file(&out);
 }
 

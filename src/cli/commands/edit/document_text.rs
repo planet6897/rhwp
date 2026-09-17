@@ -429,6 +429,16 @@ pub(super) fn edit_insert_page_break(args: &[String]) -> i32 {
             return EXIT_RUNTIME;
         }
     }
+    // [#7218] 문단 좌표 변화를 봉투에 싣는다. 문단 시작(offset 0)은 문단을 가르지 않아
+    // 문단 수가 그대로이고 쪽 나눔은 대상 문단이 갖는다. 중간 오프셋은 문단이 하나 늘고
+    // 쪽 나눔은 뒤 조각(`para + 1`)에 붙는다. 후속 좌표 편집이 어긋나지 않도록 알린다.
+    let at_paragraph_start = offset == 0;
+    let paragraph_delta: u32 = if at_paragraph_start { 0 } else { 1 };
+    let page_break_paragraph = if at_paragraph_start {
+        para_arg
+    } else {
+        para_arg + 1
+    };
     finish_edit_write(
         &mut doc,
         &bytes,
@@ -441,7 +451,9 @@ pub(super) fn edit_insert_page_break(args: &[String]) -> i32 {
         serde_json::json!({
             "section": section_arg,
             "paragraph": para_arg,
-            "offset": offset_arg
+            "offset": offset_arg,
+            "paragraphDelta": paragraph_delta,
+            "pageBreakParagraph": page_break_paragraph
         }),
         &[(sec, para)],
         &format!(
