@@ -337,6 +337,7 @@ pub(in crate::renderer::typeset) fn place_with_storage<S: crate::storage::Storag
     }
 
     let (height_before, page_count_before) = st.table_paragraph_flow_position();
+    let mut para_float_flow_floor: Option<f64> = None;
     let para_start_height = height_before;
     let mut para_float_lanes = FloatLaneSet::new();
 
@@ -467,6 +468,35 @@ pub(in crate::renderer::typeset) fn place_with_storage<S: crate::storage::Storag
                         );
                     },
                 );
+                // 문단 기준 위아래 자리차지 표를 이 쪽에 통째로 놓았으면 그 점유 하단이
+                // 문단 흐름의 하한이다(배치도 표 하단을 흐름 끝으로 쓴다). 아래 TAC 높이
+                // 보정은 저장 줄로 되감으므로, 표가 선언보다 자라면 그 성장분을 잃는다.
+                // 저장 사다리는 표의 **선언** 높이를 증언한다. 실측이 선언보다 클 때만 그 성장분이
+                // 사다리에 없다 — 선언 그대로인 표 둘레의 뒤 줄 저장 위치(표 위 차선 등)는 믿는다.
+                let measured_grew_past_declared = measured_tables
+                    .iter()
+                    .find(|m| m.para_index == para_idx && m.control_index == ctrl_idx)
+                    .is_some_and(|m| {
+                        m.total_height
+                            > crate::renderer::hwpunit_to_px(table.common.height as i32, engine.dpi)
+                                + 1.0
+                    });
+                if measured_grew_past_declared
+                    && !table.common.treat_as_char
+                    && table.common.text_wrap == crate::model::shape::TextWrap::TopAndBottom
+                    && matches!(
+                        table.common.vert_rel_to,
+                        crate::model::shape::VertRelTo::Para
+                    )
+                    && st.flow_table_page_count() == page_count_before
+                    && matches!(st.current_items.last(), Some(crate::renderer::pagination::PageItem::Table { para_index, control_index })
+                        if *para_index == para_idx && *control_index == ctrl_idx)
+                {
+                    para_float_flow_floor = Some(
+                        para_float_flow_floor
+                            .map_or(st.current_height, |floor: f64| floor.max(st.current_height)),
+                    );
+                }
                 if break_after_current_table {
                     break;
                 }
@@ -537,6 +567,13 @@ pub(in crate::renderer::typeset) fn place_with_storage<S: crate::storage::Storag
             measured_tac_floor,
             engine.tac_flow_query(),
         );
+        if let Some(floor) = para_float_flow_floor {
+            if st.flow_table_page_count() == page_count_before && floor > st.current_height {
+                st.align_flow_to(floor);
+                st.protect_current_ladder_floor();
+                st.record_float_growth_flow_owner(para_idx);
+            }
+        }
     }
 
     Ok(())

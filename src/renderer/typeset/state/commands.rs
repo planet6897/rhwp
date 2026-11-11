@@ -627,6 +627,16 @@ impl TypesetState {
         self.data.wrap_around_any_seg = any_segment;
         self.data.wrap_around_derived_band = false;
     }
+    pub(in crate::renderer::typeset) fn record_float_growth_flow_owner(&mut self, para_idx: usize) {
+        self.data.float_growth_flow_owner = Some((para_idx, self.data.pages.len()));
+    }
+    /// 바로 앞 쪽에서 기록한 성장 host 만 돌려준다(그보다 오래된 증거는 이 쪽 경계와 무관).
+    pub(in crate::renderer::typeset) fn previous_page_float_growth_owner(&self) -> Option<usize> {
+        self.data
+            .float_growth_flow_owner
+            .filter(|&(_, page)| page + 1 == self.data.pages.len())
+            .map(|(owner, _)| owner)
+    }
     pub(in crate::renderer::typeset) fn protect_current_ladder_floor(&mut self) {
         self.data.ladder_band_floor = self.data.ladder_band_floor.max(self.data.current_height);
     }

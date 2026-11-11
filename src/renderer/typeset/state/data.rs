@@ -67,6 +67,10 @@ pub(in crate::renderer::typeset) struct StateView {
     /// [#5699 H1] 이 쪽에서 사다리-미계상 표 밴드 교정으로 확보한 흐름 바닥(px).
     /// 후속 문단의 저장 vpos 후방 스냅이 교정분을 되돌리지 못한다. 쪽 단위 리셋.
     pub(in crate::renderer::typeset) ladder_band_floor: f64,
+    /// 문단 기준 위아래 자리차지 표의 실측 점유 하단이 TAC 높이 보정(저장 줄)보다 아래라
+    /// 흐름 하한으로 올린 host 문단. 저장 사다리가 그 표의 선언 높이만 증언하므로 뒤 문단의
+    /// 저장 쪽 경계가 낡았다는 증거다. 다음 저장 쪽 리셋 판정이 한 번 소비한다.
+    pub(in crate::renderer::typeset) float_growth_flow_owner: Option<(usize, usize)>,
     /// [#5699 H1] 이번 단에서 교정 판별이 발동한 표 (para, ctrl) — 단 flush 시
     /// 소속 페이지의 `ladder_band_tables` 로 이관해 렌더러와 판정을 공유한다.
     pub(in crate::renderer::typeset) current_ladder_band_tables: Vec<(usize, usize)>,

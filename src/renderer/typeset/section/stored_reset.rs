@@ -502,10 +502,25 @@ impl TypesetEngine {
                 // Plain-text near-top source resets were evaluated against the
                 // accepted stored origin above. Explicit zero/shape/column
                 // boundaries retain their separate ownership contracts.
+                // 저장 사다리가 낡았다는 증거(자리차지 표 실측 성장으로 올린 흐름 하한)가 있을
+                // 때만 앞 넘침이 연 쪽을 이 리셋의 쪽으로 인정한다. 증거 없는 넘침은 rhwp 의
+                // 높이 차일 수 있어 저장 경계를 그대로 존중한다.
+                let float_growth_owner = st.previous_page_float_growth_owner();
                 let trigger = trigger
                     && !boundary.reconsider_synthetic_break
                     && !reset_consumed_by_empty_prefix
                     && !st.stored_paragraph_boundary_already_open(paragraphs, para_idx)
+                    && !(float_growth_owner.is_some_and(|owner| {
+                        st.current_items
+                            .first()
+                            .and_then(page_item_para_index)
+                            .is_some_and(|first| owner < first)
+                    }) && stored_reset_realized_by_spill(
+                        &st.current_items,
+                        paragraphs,
+                        para_idx,
+                        cv,
+                    ))
                     && !stored_boundary_invalidated_by_reflow
                     && !omit_pushed_empty_page
                     && !hangul2024_refit
@@ -631,4 +646,49 @@ fn stored_segment_ladder_misses_content(
         }
     }
     rebuilt_line && text_line_below_body
+}
+
+/// 저장 쪽 리셋(현재 문단 첫 줄 `cv`)이 가리키는 쪽 경계를 앞 내용의 넘침이 이미 열었는가.
+/// 현재 쪽의 첫 항목 문단이 저장 사다리에서는 리셋 **앞** 쪽에 있었고(첫 줄 vpos > `cv`),
+/// 그 문단부터 현재 문단 앞까지 다른 저장 리셋이 없으면, 한/글이 저장한 쪽 경계는 그
+/// 문단들 뒤였지만 실제 흐름은 그 문단들부터 새 쪽에 놓였다. 같은 경계를 한 번 더 넘기면
+/// 저장 사다리에 없는 쪽이 생긴다.
+fn stored_reset_realized_by_spill(
+    current_items: &[crate::renderer::pagination::PageItem],
+    paragraphs: &[Paragraph],
+    para_idx: usize,
+    cv: i32,
+) -> bool {
+    let Some(owner) = current_items.first().and_then(page_item_para_index) else {
+        return false;
+    };
+    if owner >= para_idx {
+        return false;
+    }
+    let first_stored_vpos = |p: &Paragraph| {
+        p.line_segs
+            .first()
+            .filter(|seg| !is_synthetic_line_seg(seg))
+            .map(|seg| seg.vertical_pos)
+    };
+    let Some(owner_vpos) = first_stored_vpos(&paragraphs[owner]) else {
+        return false;
+    };
+    if owner_vpos <= cv {
+        return false;
+    }
+    // owner..para_idx 사이에 다른 저장 되감김이 있으면 그 경계가 따로 있다.
+    let mut previous = owner_vpos;
+    for para in &paragraphs[owner + 1..para_idx] {
+        let Some(vpos) = first_stored_vpos(para) else {
+            return false;
+        };
+        if vpos < previous {
+            return false;
+        }
+        previous = vpos;
+    }
+    current_items
+        .iter()
+        .all(|item| page_item_para_index(item).is_some_and(|idx| idx >= owner && idx < para_idx))
 }
