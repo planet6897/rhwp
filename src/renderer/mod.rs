@@ -2767,6 +2767,32 @@ pub(crate) fn stored_overlap_spacer_advance_hu(
     (forward > 0 && forward <= i64::from(seg.line_height)).then_some(forward as i32)
 }
 
+/// [#8981] 겹침 걸음 사다리 빈 줄 문단의 **문단 원점 기준** 전진(px).
+///
+/// `stored_overlap_spacer_advance_hu` 의 저장 차이(이 줄 vpos → 다음 문단 vpos)에는
+/// 다음 문단의 앞 간격이 이미 들어 있다. 배치·측정은 다음 문단에서 그 앞 간격을 다시
+/// 더하므로 여기서 빼고, 소비자가 이 문단 앞 간격을 따로 더하지 않으므로 현재 앞
+/// 간격을 넣는다. `float_placement::stored_empty_successor_geometry` 와 같은 분리다.
+/// 문단 간격이 0 인 칸(#6923 원 사례)에서는 저장 차이 그대로다.
+pub(crate) fn stored_overlap_spacer_advance_px(
+    paragraphs: &[crate::model::paragraph::Paragraph],
+    para_idx: usize,
+    styles: &crate::renderer::style_resolver::ResolvedStyleSet,
+    dpi: f64,
+) -> Option<f64> {
+    let forward = stored_overlap_spacer_advance_hu(paragraphs, para_idx)?;
+    let current = paragraphs.get(para_idx)?;
+    let next = paragraphs.get(para_idx + 1)?;
+    let before_of = |para: &crate::model::paragraph::Paragraph| {
+        styles
+            .para_styles
+            .get(para.para_shape_id as usize)
+            .map_or(0.0, |style| style.spacing_before)
+    };
+    let current_before = cell_paragraph_spacing_before(current, para_idx, before_of(current));
+    Some((current_before + hwpunit_to_px(forward, dpi) - before_of(next)).max(0.0))
+}
+
 /// [#2287] 저장 LINE_SEG 없는 빈 anchor 문단의 TAC(글자처럼) 그림/도형 플로우
 /// 줄 메트릭 합성. 컨트롤 폭을 가용 폭에 greedy wrap 하여 줄별
 /// (최대 높이, leading) 을 돌려준다.
