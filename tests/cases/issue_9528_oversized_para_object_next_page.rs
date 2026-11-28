@@ -7,7 +7,14 @@
 //! 본문 높이 252mm.
 //! 기준: `pdf/issue9528/oversized_para_picture-2020.pdf` — 한/글 2020(11.0.0.9172) Hancom PDF Print, 3쪽.
 //!
-//! 측정: MEASURED
+//! 측정: 2026-11-29 KST, `scripts/visual_sweep.py --silhouette-only`(색상 경계 보정 전 2px 내용 실루엣
+//! `silhouette_raw_match_percent`, 96 DPI), head 6785f1ecee / base 274ae9d4c8, 글꼴 공급 `~/Library/Fonts`.
+//! - Native 전 3쪽: 99.94 / 99.99 / 99.65 (최저 99.65, 3쪽 = 그림 쪽)
+//! - fresh WASM 전 3쪽: 99.99 / 99.98 / 99.65 (최저 99.65)
+//! - 수정 전(base): Native·WASM 모두 2쪽, 2쪽 15.20 / 15.21 (그림이 2쪽 글을 덮음)
+//! - 증거: `mydocs/pr/assets/issue_9528/{native,wasm,base-native,base-wasm}/oversized_para_picture_silhouette.tsv`
+//!   와 같은 폴더의 2·3쪽 review·overlay PNG. 쪽수는 한/글 Print 3쪽과 일치.
+//! 좌표 검사는 그림 위 끝 = 본문 위 끝(±0.5px)과 본문 아래 끝 초과라는 본문 영역과의 관계만 본다.
 #![cfg(not(target_arch = "wasm32"))]
 
 use rhwp::document_core::DocumentCore;

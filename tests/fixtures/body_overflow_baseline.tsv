@@ -303,3 +303,7 @@ issue9419/kaf_appendix_2020.hwpx	5
 # #9384 용지 끝 사진 대조. 한컴 2020 인쇄에서 같은 위치에서 잘리는 의도적 입력이다.
 pr9349-cell-floats/photo-a5-height.hwp	1
 pr9349-cell-floats/photo-short-page.hwp	1
+
+# #9528 본문(252mm)보다 높은 문단 기준 그림(258mm)은 다음 쪽 본문 맨 위에서 시작해 아래 끝이 본문 밖으로 나간다.
+# 한/글 2020 Print 3쪽에서도 그림 잉크가 y 94~1068px 로 본문 바닥 1046.9px 를 넘는다(rhwp 1069.6px). 수정 전(devel 274ae9d4c8)에도 2쪽에 끌어올린 그림이 같은 22.7px 를 넘어 1건이다.
+issue9528/oversized_para_picture.hwp	1
