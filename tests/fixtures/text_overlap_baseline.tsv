@@ -176,6 +176,9 @@ issue8773/field_led_wide_table.hwpx	1
 issue8773/field_led_wide_table_nofield.hwpx	1
 issue8782/stored_field_line_table.hwpx	1
 issue8786/reflowed_gap_stored_rewind.hwpx	1
+# #9517 신규 표본(#8773 원본 36479199 의 글자 없는 누름틀 host 를 한/글 2020 이 다시 저장한 것): 1쪽 제목 두 줄
+# (y 75.5) 상자의 기존 겹침 1건을 #8773 원본과 같이 물려받는다. 수정 전(devel 274ae9d4c8)과 수정 후 모두 1건이다.
+issue9517/field_only_wide_table_hancom.hwp	1
 # #8842 신규 공개 샘플(HPV 코호트 최종결과보고서 1351000-201800239, 한/글 2020 Print 235쪽): 수정 전(devel 024d610633)과
 # 수정 후의 값이 같다 — 1·118쪽 표 칸 글자 겹침(118쪽 39건)은 76~172쪽 표 쪽 나눔 어긋남 축이며 이 수정(211~234쪽 그림 무리) 범위 밖이다.
 issue8842/1351000-201800239_hpv_cohort_final_report.hwp	41
