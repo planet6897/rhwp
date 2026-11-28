@@ -12999,12 +12999,24 @@ impl LayoutEngine {
                             para,
                             px_to_hwpunit(col_area.width, self.dpi),
                         );
-                        let has_tac_block = para.controls.iter().any(|c| {
+                        let is_tac_block = |c: &Control| {
                             matches!(c, Control::Table(t) if t.common.treat_as_char
                                 && !crate::renderer::height_measurer::is_tac_table_inline_in_para(
                                     t, seg_width, para))
-                        });
-                        if has_tac_block {
+                        };
+                        let has_tac_block = para.controls.iter().any(is_tac_block);
+                        // [#9517] 이 조각의 줄이 모두 이 문단의 첫 블록 표 줄보다 앞이면 표 앞
+                        // prefix 줄이다(쪽 나눔이 `owned_tac_prefix_rows` 로 높이를 예약해 내보냄).
+                        // 직전 항목이 다른 문단의 TAC 였다는 이유로 그 줄의 전진을 버리지 않는다.
+                        let pre_table_prefix = para
+                            .controls
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, c)| is_tac_block(c))
+                            .filter_map(|(ci, _)| control_line_seg_index(para, ci))
+                            .min()
+                            .is_some_and(|first_table_line| *end_line <= first_table_line);
+                        if has_tac_block && !pre_table_prefix {
                             let pp_text_only_ws = if let Some(comp) = source_comp {
                                 // 쪽 나눔이 정한 줄 범위가 현재 조합 줄 수보다 길 수 있다. 남은 줄만 본다.
                                 let end = (*end_line).min(comp.lines.len());
