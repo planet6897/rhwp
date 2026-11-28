@@ -6627,11 +6627,17 @@ pub(crate) fn overflow_para_object_next_page_placement(
         .checked_add(i32::from(common.margin.top))?
         .checked_add(i32::from(common.margin.bottom))?;
     let height = hwpunit_to_px(frame_height, dpi);
-    // 한 쪽에 들어가지 않는 개체와 위로 당긴 개체는 실측하지 않았다.
-    if offset < 0.0 || frame_height <= 0 || height > available_height {
+    // 위로 당긴 개체는 실측하지 않았다.
+    if offset < 0.0 || frame_height <= 0 {
         return None;
     }
     if host_flow_y + offset + height <= available_height + 0.5 {
+        return None;
+    }
+    // [#9528] 본문보다 높은 개체도 같다. 한/글 2020·2024 는 다음 쪽 본문 맨 위에 그리고 아래 끝은
+    // 본문 밖으로 넘긴다(156398201 pi=24 258mm 포스터, 본문 252mm). 이미 본문 맨 위에서
+    // 시작하는 개체는 다음 쪽으로 옮겨도 같은 자리라 옮기지 않는다.
+    if host_flow_y + offset <= 0.5 {
         return None;
     }
     let next_flow_y = if common.text_wrap == TextWrap::TopAndBottom {
